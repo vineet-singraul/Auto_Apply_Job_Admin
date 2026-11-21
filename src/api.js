@@ -1,5 +1,14 @@
 // Admin API client. Tokens sessionStorage me (tab band = logout).
-const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
+// VITE_API_BASE me ek URL ho, ya "liveURL || localURL" - dono chalega:
+// admin localhost par khula ho to localhost wala URL, warna live (pehla non-localhost) URL.
+function pickBase(raw) {
+  const urls = String(raw || '').split('||').map((s) => s.trim().replace(/\/+$/, '')).filter(Boolean);
+  if (!urls.length) return 'http://localhost:4000';
+  const isLocal = (u) => /\/\/(localhost|127\.0\.0\.1)(:|$)/.test(u);
+  const onLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
+  return (onLocal ? urls.find(isLocal) : urls.find((u) => !isLocal(u))) || urls[0];
+}
+const BASE = pickBase(import.meta.env.VITE_API_BASE);
 const S = sessionStorage;
 
 export const getAuth = () => { try { return JSON.parse(S.getItem('adminAuth')); } catch { return null; } };
@@ -13,7 +22,7 @@ async function raw(method, path, body, token) {
       headers: { 'content-type': 'application/json', ...(token && { authorization: `Bearer ${token}` }) },
       body: body ? JSON.stringify(body) : undefined,
     });
-  } catch { throw new Error('Server not reachable'); }
+  } catch { throw new Error(`Cannot reach the server (${BASE}). It may be starting up, or this website is not in the backend's CORS_ORIGINS.`); }
   return { status: r.status, data: await r.json().catch(() => ({})) };
 }
 
