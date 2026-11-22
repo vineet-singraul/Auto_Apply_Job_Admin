@@ -5,6 +5,7 @@ import { ErrorBox, Loader, Page, inr } from '../ui';
 
 const FIELDS = [
   ['price', 'Price (₹)'], ['durationDays', 'Duration (days)'], ['dailyApplyLimit', 'Applies per day'], ['totalApplies', 'Total applies (free)'],
+  ['dailyLeadLimit', 'Leads per day'], ['totalLeads', 'Total leads (free)'],
   ['resumeLimit', 'Resume uploads'], ['batchSize', 'Batch size'], ['batchBreakSec', 'Batch break (sec)'],
 ];
 
@@ -20,12 +21,12 @@ function PlanCard({ plan }) {
     },
     onSuccess: () => { setSaved(true); qc.invalidateQueries({ queryKey: ['plans'] }); },
   });
-  const fields = FIELDS.filter(([k]) => (plan.name === 'free' ? !['price', 'durationDays', 'dailyApplyLimit'].includes(k) : k !== 'totalApplies'));
+  const fields = FIELDS.filter(([k]) => (plan.name === 'free' ? !['price', 'durationDays', 'dailyApplyLimit', 'dailyLeadLimit'].includes(k) : !['totalApplies', 'totalLeads'].includes(k)));
   return (
     <section className="card plan-card">
       <div>
         <div className="plan-name">{plan.name}</div>
-        <div className="plan-price">{plan.name === 'free' ? `${plan.totalApplies} applies total` : `${inr(plan.price)} · ${plan.durationDays} days · ${plan.dailyApplyLimit}/day`}</div>
+        <div className="plan-price">{plan.name === 'free' ? `${plan.totalApplies} applies · ${plan.totalLeads ?? 0} leads total` : `${inr(plan.price)} · ${plan.durationDays} days · ${plan.dailyApplyLimit} applies + ${plan.dailyLeadLimit ?? 0} leads/day`}</div>
       </div>
       {fields.map(([k, label]) => (
         <label className="field" key={k}>
