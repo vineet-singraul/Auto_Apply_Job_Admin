@@ -1,6 +1,6 @@
-// Shared admin UI: table + cursor pagination hook + status chip
+// Shared admin UI (styles.css ki classes use karta hai)
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Alert, Box, Button, Card, Chip, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import { get, qs } from './api';
 
 export function useList(path, params = {}) {
@@ -12,64 +12,93 @@ export function useList(path, params = {}) {
   });
 }
 
-export function ListTable({ q, columns, onRow }) {
-  if (q.isLoading) return <CircularProgress />;
-  if (q.error) return <Alert severity="error">{q.error.message}</Alert>;
+export const Loader = () => <div className="loader"><span /></div>;
+export const ErrorBox = ({ error }) => <div className="alert alert-danger">{error?.message || String(error)}</div>;
+export const Empty = ({ title = 'Nothing here yet', text = 'Data will show up here as users start using the extension.' }) => (
+  <div className="empty"><b>{title}</b><span>{text}</span></div>
+);
+
+export function ListTable({ q, columns, onRow, empty }) {
+  if (q.isLoading) return <Loader />;
+  if (q.error) return <ErrorBox error={q.error} />;
   const rows = q.data.pages.flatMap((p) => p.items);
   return (
     <>
-      <DataTable rows={rows} columns={columns} onRow={onRow} />
-      {q.hasNextPage && <Button sx={{ mt: 1 }} disabled={q.isFetchingNextPage} onClick={() => q.fetchNextPage()}>Load more</Button>}
+      <DataTable rows={rows} columns={columns} onRow={onRow} empty={empty} />
+      {q.hasNextPage && (
+        <div className="load-more">
+          <button className="btn" disabled={q.isFetchingNextPage} onClick={() => q.fetchNextPage()}>{q.isFetchingNextPage ? 'Loading...' : 'Load more'}</button>
+        </div>
+      )}
     </>
   );
 }
 
-export function DataTable({ rows, columns, onRow }) {
-  if (!rows.length) {
-    return (
-      <Card sx={{ p: 5, textAlign: 'center' }}>
-        <Typography fontWeight={600}>Nothing here yet</Typography>
-        <Typography variant="body2" color="text.secondary">Data will show up here as users start using the extension.</Typography>
-      </Card>
-    );
-  }
+// columns: [label, (row) => cell]
+export function DataTable({ rows, columns, onRow, empty }) {
+  if (!rows.length) return empty || <Empty />;
   return (
-    <Card sx={{ overflow: 'auto', maxHeight: '75vh' }}>
-      <Table size="small" stickyHeader>
-        <TableHead><TableRow>{columns.map((c) => <TableCell key={c[0]} sx={{ whiteSpace: 'nowrap', py: 1.25 }}>{c[0]}</TableCell>)}</TableRow></TableHead>
-        <TableBody>
+    <div className="table-wrap">
+      <table className="table">
+        <thead><tr>{columns.map((c) => <th key={c[0]}>{c[0]}</th>)}</tr></thead>
+        <tbody>
           {rows.map((r) => (
-            <TableRow key={r._id || JSON.stringify(r)} hover onClick={onRow ? () => onRow(r) : undefined}
-              sx={{ cursor: onRow ? 'pointer' : 'default', '& td': { py: 1.1, borderColor: '#f1f5f9' }, '&:last-child td': { border: 0 } }}>
-              {columns.map((c) => <TableCell key={c[0]}>{c[1](r)}</TableCell>)}
-            </TableRow>
+            <tr key={r._id || JSON.stringify(r)} className={onRow ? 'clickable' : undefined} onClick={onRow ? () => onRow(r) : undefined}>
+              {columns.map((c) => <td key={c[0]} data-label={c[0]}>{c[1](r)}</td>)}
+            </tr>
           ))}
-        </TableBody>
-      </Table>
-    </Card>
+        </tbody>
+      </table>
+    </div>
   );
 }
 
-const COLORS = {
-  active: 'success', applied: 'success', approved: 'success', blocked: 'error', failed: 'error', rejected: 'error',
-  submitted: 'warning', pending: 'default', skipped: 'default', expired: 'default', cancelled: 'default', refunded: 'default', admin: 'primary',
+const TONE = {
+  active: 'success', applied: 'success', approved: 'success', on: 'success',
+  blocked: 'danger', failed: 'danger', rejected: 'danger', deleted: 'danger',
+  submitted: 'warning', pending: 'muted', skipped: 'muted', expired: 'muted', cancelled: 'muted', refunded: 'info', admin: 'primary', user: 'muted',
 };
-export const Status = ({ v }) => <Chip size="small" color={COLORS[v] || 'default'} label={v === 'submitted' ? 'to verify' : v} sx={{ textTransform: 'capitalize' }} />;
-
-export const dt = (d) => (d ? new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '–');
-export const day = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { dateStyle: 'medium' }) : '–');
+export const Status = ({ v, label }) => <span className={`chip chip-${TONE[v] || 'muted'}`}>{label || (v === 'submitted' ? 'to verify' : v)}</span>;
+export const Note = ({ children }) => (children ? <span className="note">{children}</span> : null);
 
 export function Page({ title, subtitle, actions, children }) {
   return (
-    <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
-        <Box sx={{ flex: 1, minWidth: 200 }}>
-          <Typography variant="h5" fontWeight={800}>{title}</Typography>
-          {subtitle && <Typography variant="body2" color="text.secondary">{subtitle}</Typography>}
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', '& .MuiTextField-root': { bgcolor: '#fff' } }}>{actions}</Box>
-      </Box>
+    <div className="page">
+      <header className="page-head">
+        <div>
+          <h1 className="page-title">{title}</h1>
+          {subtitle && <p className="page-sub">{subtitle}</p>}
+        </div>
+        {actions && <div className="page-actions">{actions}</div>}
+      </header>
       {children}
-    </Box>
+    </div>
   );
 }
+
+export function Select({ label, value, onChange, options }) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+      </select>
+    </label>
+  );
+}
+
+export function Search({ value, onChange, placeholder = 'Search...' }) {
+  return (
+    <label className="field search">
+      <span>Search</span>
+      <div className="search-box">
+        <SearchIcon />
+        <input className="input" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+      </div>
+    </label>
+  );
+}
+
+export const dt = (d) => (d ? new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '–');
+export const day = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { dateStyle: 'medium' }) : '–');
+export const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;

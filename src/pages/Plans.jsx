@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Card, CardContent, CircularProgress, Grid, Stack, TextField, Typography } from '@mui/material';
 import { api, get } from '../api';
-import { Page } from '../ui';
+import { ErrorBox, Loader, Page, inr } from '../ui';
 
 const FIELDS = [
   ['price', 'Price (₹)'], ['durationDays', 'Duration (days)'], ['dailyApplyLimit', 'Applies per day'], ['totalApplies', 'Total applies (free)'],
@@ -23,31 +22,31 @@ function PlanCard({ plan }) {
   });
   const fields = FIELDS.filter(([k]) => (plan.name === 'free' ? !['price', 'durationDays', 'dailyApplyLimit'].includes(k) : k !== 'totalApplies'));
   return (
-    <Card variant="outlined">
-      <CardContent>
-        <Typography variant="h6" fontWeight={700} textTransform="capitalize" sx={{ mb: 2 }}>{plan.name}</Typography>
-        <Stack spacing={1.5}>
-          {fields.map(([k, label]) => (
-            <TextField key={k} size="small" type="number" label={label} value={f[k] ?? ''} onChange={(e) => { setSaved(false); setF({ ...f, [k]: e.target.value }); }} />
-          ))}
-          {save.error && <Alert severity="error">{save.error.message}</Alert>}
-          {saved && <Alert severity="success">Saved. Users see it within 5 minutes.</Alert>}
-          <Button variant="contained" disabled={save.isPending} onClick={() => save.mutate()}>Save</Button>
-        </Stack>
-      </CardContent>
-    </Card>
+    <section className="card plan-card">
+      <div>
+        <div className="plan-name">{plan.name}</div>
+        <div className="plan-price">{plan.name === 'free' ? `${plan.totalApplies} applies total` : `${inr(plan.price)} · ${plan.durationDays} days · ${plan.dailyApplyLimit}/day`}</div>
+      </div>
+      {fields.map(([k, label]) => (
+        <label className="field" key={k}>
+          <span>{label}</span>
+          <input className="input" type="number" value={f[k] ?? ''} onChange={(e) => { setSaved(false); setF({ ...f, [k]: e.target.value }); }} />
+        </label>
+      ))}
+      {save.error && <ErrorBox error={save.error} />}
+      {saved && <div className="alert alert-success">Saved. Users see it within 5 minutes.</div>}
+      <button className="btn btn-primary btn-block" disabled={save.isPending} onClick={() => save.mutate()}>{save.isPending ? 'Saving...' : 'Save changes'}</button>
+    </section>
   );
 }
 
 export default function Plans() {
   const q = useQuery({ queryKey: ['plans'], queryFn: () => get('/admin/plans') });
-  if (q.isLoading) return <CircularProgress />;
-  if (q.error) return <Alert severity="error">{q.error.message}</Alert>;
+  if (q.isLoading) return <Loader />;
+  if (q.error) return <ErrorBox error={q.error} />;
   return (
-    <Page title="Plan settings">
-      <Grid container spacing={2}>
-        {q.data.plans.map((p) => <Grid item xs={12} md={4} key={p._id}><PlanCard plan={p} /></Grid>)}
-      </Grid>
+    <Page title="Plan settings" subtitle="Prices and limits for each plan">
+      <div className="grid grid-3">{q.data.plans.map((p) => <PlanCard key={p._id} plan={p} />)}</div>
     </Page>
   );
 }

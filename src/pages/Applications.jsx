@@ -1,26 +1,24 @@
 import { useState } from 'react';
-import { Link as RLink } from 'react-router-dom';
-import { Link, MenuItem, TextField } from '@mui/material';
-import { ListTable, Page, Status, dt, useList } from '../ui';
+import { Link } from 'react-router-dom';
+import { ListTable, Note, Page, Select, Status, dt, useList } from '../ui';
 
 export default function Applications() {
   const [platform, setPlatform] = useState('');
   const [status, setStatus] = useState('');
   const q = useList('/admin/applications', { platform, status });
   return (
-    <Page title="Applications" actions={<>
-      <TextField size="small" select label="Site" value={platform} onChange={(e) => setPlatform(e.target.value)} sx={{ minWidth: 120 }}>
-        <MenuItem value="">All</MenuItem><MenuItem value="linkedin">LinkedIn</MenuItem><MenuItem value="naukri">Naukri</MenuItem>
-      </TextField>
-      <TextField size="small" select label="Status" value={status} onChange={(e) => setStatus(e.target.value)} sx={{ minWidth: 120 }}>
-        <MenuItem value="">All</MenuItem><MenuItem value="applied">Applied</MenuItem><MenuItem value="skipped">Skipped</MenuItem><MenuItem value="failed">Failed</MenuItem>
-      </TextField>
+    <Page title="Applications" subtitle="Every job the extension applied to, skipped or failed" actions={<>
+      <Select label="Site" value={platform} onChange={setPlatform} options={[['', 'All sites'], ['linkedin', 'LinkedIn'], ['naukri', 'Naukri']]} />
+      <Select label="Status" value={status} onChange={setStatus} options={[['', 'All'], ['applied', 'Applied'], ['skipped', 'Skipped'], ['failed', 'Failed']]} />
     </>}>
       <ListTable q={q} columns={[
-        ['Date', (a) => dt(a.appliedAt)],
-        ['User', (a) => <Link component={RLink} to={`/users/${a.userId}`}>{a.userEmail}</Link>],
-        ['Job', (a) => (a.jobUrl ? <Link href={a.jobUrl} target="_blank" rel="noopener">{a.jobTitle || a.jobId}</Link> : a.jobTitle)],
-        ['Company', (a) => a.company], ['Site', (a) => a.platform], ['Score', (a) => (a.matchScore != null ? `${a.matchScore}%` : '–')], ['Status', (a) => <><Status v={a.status} />{a.note && <div style={{ fontSize: 12, color: '#6b7280', maxWidth: 280 }}>{a.note}</div>}</>],
+        ['Date', (a) => <span className="muted">{dt(a.appliedAt)}</span>],
+        ['User', (a) => <Link to={`/users/${a.userId}`}>{a.userEmail}</Link>],
+        ['Job', (a) => (a.jobUrl ? <a href={a.jobUrl} target="_blank" rel="noopener noreferrer" className="strong">{a.jobTitle || a.jobId}</a> : a.jobTitle)],
+        ['Company', (a) => a.company || '–'],
+        ['Site', (a) => <Status v={a.platform === 'linkedin' ? 'admin' : 'refunded'} label={a.platform} />],
+        ['Score', (a) => (a.matchScore != null ? <b>{a.matchScore}%</b> : '–')],
+        ['Status', (a) => <div><Status v={a.status} /><Note>{a.note}</Note></div>],
       ]} />
     </Page>
   );

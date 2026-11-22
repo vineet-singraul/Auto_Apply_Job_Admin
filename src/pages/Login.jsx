@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Alert, Box, Button, Card, CardContent, Stack, TextField, Typography } from '@mui/material';
 import { login } from '../api';
 
 export default function Login() {
@@ -12,20 +11,24 @@ export default function Login() {
     try { await login(f.email, f.password); location.reload(); } catch (x) { setErr(x.message); } finally { setBusy(false); }
   };
   return (
-    <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', p: 2, background: 'radial-gradient(circle at 20% 20%, #dbeafe 0, transparent 40%), radial-gradient(circle at 80% 80%, #ede9fe 0, transparent 40%), #f8fafc' }}>
-      <Card sx={{ width: '100%', maxWidth: 400, boxShadow: '0 20px 50px -20px rgba(37,99,235,.35)' }}>
-        <CardContent component="form" onSubmit={submit} sx={{ p: 4 }}>
-          <Box sx={{ width: 44, height: 44, borderRadius: 2.5, background: 'linear-gradient(135deg,#2563eb,#4f46e5)', color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 800, mb: 2 }}>AI</Box>
-          <Typography variant="h5" fontWeight={800}>Admin sign in</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Job Apply AI control panel</Typography>
-          <Stack spacing={2}>
-            {err && <Alert severity="error">{err}</Alert>}
-            <TextField label="Email" type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} required autoFocus />
-            <TextField label="Password" type="password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} required />
-            <Button type="submit" variant="contained" size="large" disabled={busy} sx={{ py: 1.25 }}>{busy ? 'Signing in...' : 'Sign in'}</Button>
-          </Stack>
-        </CardContent>
-      </Card>
-    </Box>
+    <div className="login-screen">
+      <form className="login-card" onSubmit={submit}>
+        <div className="brand-logo">AI</div>
+        <div>
+          <h1>Admin sign in</h1>
+          <p>Job Apply AI control panel</p>
+        </div>
+        {err && <div className="alert alert-danger">{err}</div>}
+        <label className="field">
+          <span>Email</span>
+          <input className="input" type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} required autoFocus autoComplete="username" />
+        </label>
+        <label className="field">
+          <span>Password</span>
+          <input className="input" type="password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} required autoComplete="current-password" />
+        </label>
+        <button type="submit" className="btn btn-primary btn-lg btn-block" disabled={busy}>{busy ? 'Signing in...' : 'Sign in'}</button>
+      </form>
+    </div>
   );
 }
